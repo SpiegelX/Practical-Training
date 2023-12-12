@@ -6,6 +6,7 @@
 #include "stm32f4xx_hal.h"
 
 // Khởi tạo mutex
+
 SemaphoreHandle_t xSemaphore = NULL;
 UART_HandleTypeDef huart2;
 TimerHandle_t xTimer1, xTimer2;
