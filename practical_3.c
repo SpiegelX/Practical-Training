@@ -92,8 +92,8 @@ void LED1_Task(void * pvParameter) {
     if(xSemaphore != NULL) {
         // Lấy mutex, chờ tối đa 10 tick nếu mutex không sẵn sàng
         if(xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-            HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5); // Đảo trạng thái LED1
-            if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == GPIO_PIN_SET) {
+            HAL_GPIO_TogglePin(GPIOA, LED_1_PIN); // Đảo trạng thái LED1
+            if(HAL_GPIO_ReadPin(GPIOA, LED_1_PIN) == GPIO_PIN_SET) {
                 char *msg = "LED 1 ON\r\n";
                 HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY); // Gửi thông báo qua UART
             } else {
@@ -109,8 +109,8 @@ void LED2_Task(void * pvParameter) {
     if(xSemaphore != NULL) {
         // Lấy mutex, chờ tối đa 10 tick nếu mutex không sẵn sàng
         if(xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5); // Đảo trạng thái LED2
-            if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_5) == GPIO_PIN_SET) {
+            HAL_GPIO_TogglePin(GPIOC, LED_2_PIN); // Đảo trạng thái LED2
+            if(HAL_GPIO_ReadPin(GPIOC, LED_2_PIN) == GPIO_PIN_SET) {
                 char *msg = "LED 2 ON\r\n";
                 HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY); // Gửi thông báo qua UART
             } else {
