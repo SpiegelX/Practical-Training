@@ -105,3 +105,217 @@ int main(void) {
     // We should not reach here
     for (;;);
 }
+
+
+// Include necessary libraries and define constants
+
+// Define LED pin numbers
+#define LED1_PIN 1
+#define LED2_PIN 2
+#define LED3_PIN 3
+
+// Define semaphore and mutex handles
+SemaphoreHandle_t LED1Semaphore, LED2Semaphore;
+SemaphoreHandle_t UARTMutex;
+
+// Define tasks
+void LED1_Task(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xLED1Period = pdMS_TO_TICKS(2000);
+
+    while (1) {
+        vTaskDelayUntil(&xLastWakeTime, xLED1Period);
+        xSemaphoreGive(LED1Semaphore);
+    }
+}
+
+void LED2_Task(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xLED2Period = pdMS_TO_TICKS(3000);
+
+    while (1) {
+        vTaskDelayUntil(&xLastWakeTime, xLED2Period);
+        xSemaphoreGive(LED2Semaphore);
+    }
+}
+
+void UART_Send(const char *data) {
+    // Acquire UART mutex
+        if (xSemaphoreTake(UARTMutex, portMAX_DELAY) == pdTRUE) {
+        // Send data via UART
+        // Release UART mutex
+        xSemaphoreGive(UARTMutex);
+    }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance == USART3)
+    {
+        HAL_UART_Transmit(&huart1, &rx_data, sizeof(rx_data), 100);
+        Blink_LED(GPIOC, GPIO_PIN_13); // Nháy LED khi truyền UART
+    }
+}
+
+void UART_TRANS_ESP(char *TRANS_DATA)
+{
+    if (xSemaphoreTake(UARTMutex, portMAX_DELAY) == pdTRUE) {
+        HAL_UART_Transmist(&huart, (uint8_t*)TRANS_DATA,strlen(TRANS_DATA), HAL_MAX_DELAY)
+        BLINK_LED();
+        xSemaphoreGive(UARTMutex);
+    }
+}
+
+
+void RS485_TRANS(uint16_t ADDRESS, char *TRANS_DATA)
+{
+    HAL_UART_Transmist(&huart, (uint8_t*)TRANS_DATA,strlen(TRANS_DATA), HAL_MAX_DELAY)
+
+
+}
+
+char RS485_READ(uint16_t ADDRESS, char *COMMAND)
+{
+    char DATA;
+    RS485_TRANS(ADDRESS, COMMAND);
+    HAL_UART_Receive_IT(&huart3, &DATA, 1);
+    return DATA;
+}
+
+void BLINK_LED(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+{
+    for(int i=0;i<10;i++){
+    HAL_GPIO_TogglePin(GPIOx, GPIO_Pin);
+    HAL_Delay(100);}
+}
+
+/*-------------------------------------------------------------------------------*/
+#include "main.h"
+#include "stdio.h"
+#include "string.h"
+
+// LED pin definition
+#define LED_PIN GPIO_PIN_13
+#define LED_PORT GPIOC
+
+// UART handle (assuming USART2 for example)
+extern UART_HandleTypeDef huart2;
+
+void LED_Blink_Task(void const * argument) {
+  for (;;) {
+    // Blink LED
+    HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+    osDelay(500); // Blink interval 500ms
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart->Instance == USART2) {
+    // UART Receive callback
+    // Activate LED blinking task upon receiving data
+    osThreadDef(LED_Blink_Task, LED_Blink_Task, osPriorityNormal, 0, 128);
+    osThreadCreate(osThread(LED_Blink_Task), NULL);
+  }
+}
+
+int main(void) {
+  // Initialize HAL, System Clock, UART, GPIO
+
+  // Start UART reception
+  HAL_UART_Receive_IT(&huart2, (uint8_t *)RxDataBuffer, 1);
+
+  // Start RTOS kernel
+  osKernelStart();
+
+  // We should not reach here
+  for (;;);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+  // UART error handling if needed
+}
+/*-------------------------------------------------------------------------------*/
+void LED3_Task(void *pvParameters) {
+    while (1) {
+        // Wait for control value from BUTTON task
+        uint32_t controlValue;
+        if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) == pdTRUE) {
+            // Toggle LED3
+            // Send status via UART
+            UART_Send("LED3 TOGGLED");
+        }
+    }
+}
+
+void BUTTON_Task(void *pvParameters) {
+    while (1) {
+        // Simulate button press or read actual button state
+        // If button value is 3, notify LED3_Task
+        uint32_t buttonValue = 3; // Replace this with actual button read logic
+        xTaskNotifyGive(LED3_Task_Handle);
+    }
+}
+
+// Main function
+int main() {
+    // Create semaphores
+    LED1Semaphore = xSemaphoreCreateBinary();
+    LED2Semaphore = xSemaphoreCreateBinary();
+    // Create mutex
+    UARTMutex = xSemaphoreCreateMutex();
+
+    // Create tasks
+    xTaskCreate(LED1_Task, "LED1_Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(LED2_Task, "LED2_Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(LED3_Task, "LED3_Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(BUTTON_Task, "BUTTON_Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+    // Start scheduler
+    vTaskStartScheduler();
+
+    // Should not reach here
+    for (;;);
+    return 0;
+}
+
+
+#include "stm32f1xx_hal.h"
+
+// Khai báo biến
+uint8_t rx_data;
+uint8_t tx_data[20] = "STM32 Hello Man!!\r\n";
+
+// Hàm nháy LED
+void Blink_LED(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+{
+    HAL_GPIO_TogglePin(GPIOx, GPIO_Pin);
+    HAL_Delay(1000);
+}
+
+// Hàm ngắt UART
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance == USART1)
+    {
+        HAL_UART_Transmit(&huart1, &rx_data, sizeof(rx_data), 100);
+        Blink_LED(GPIOC, GPIO_PIN_13); // Nháy LED khi truyền UART
+    }
+}
+
+int main(void)
+{
+    // Khởi tạo hệ thống
+    HAL_Init();
+
+    // Cấu hình và khởi tạo UART
+    // ...
+
+    // Truyền dữ liệu và cho phép ngắt ở lần đầu tiên khởi động
+    HAL_UART_Transmit(&huart1, tx_data, sizeof(tx_data), 100);
+    HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+
+    while (1)
+    {
+        // Vòng lặp chính của chương trình
+    }
+}
