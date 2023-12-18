@@ -6,23 +6,23 @@
  
 #define MAX_DATA 512
 #define MAX_ROWS 100
- 
+/*---------------------------------------------------------*/
 struct Address {
     int id;
     int set;
     char name[MAX_DATA];
     char email[MAX_DATA];
 };
- 
+ /*---------------------------------------------------------*/
 struct Database {
     struct Address rows[MAX_ROWS];
 };
- 
+ /*---------------------------------------------------------*/
 struct Connection {
     FILE *file;
     struct Database *db;
 };
- 
+ /*---------------------------------------------------------*/
 void die(const char *message)
 {
     if (errno) {
@@ -33,19 +33,19 @@ void die(const char *message)
  
     exit(1);
 }
- 
+ /*---------------------------------------------------------*/
 void Address_print(struct Address *addr)
 {
     printf("%d %s %s\n", addr->id, addr->name, addr->email);
 }
- 
+ /*---------------------------------------------------------*/
 void Database_load(struct Connection *conn)
 {
     int rc = fread(conn->db, sizeof(struct Database), 1, conn->file);
     if (rc != 1)
         die("Failed to load database.");
 }
- 
+ /*---------------------------------------------------------*/
 struct Connection *Database_open(const char *filename, char mode)
 {
     struct Connection *conn = malloc(sizeof(struct Connection));
@@ -71,7 +71,7 @@ struct Connection *Database_open(const char *filename, char mode)
  
     return conn;
 }
- 
+ /*---------------------------------------------------------*/
 void Database_close(struct Connection *conn)
 {
     if (conn) {
@@ -82,7 +82,7 @@ void Database_close(struct Connection *conn)
         free(conn);
     }
 }
- 
+ /*---------------------------------------------------------*/
 void Database_write(struct Connection *conn)
 {
     rewind(conn->file);
@@ -95,7 +95,7 @@ void Database_write(struct Connection *conn)
     if (rc == -1)
         die("Cannot flush database.");
 }
- 
+ /*---------------------------------------------------------*/
 void Database_create(struct Connection *conn)
 {
     int i = 0;
@@ -109,7 +109,7 @@ void Database_create(struct Connection *conn)
         conn->db->rows[i] = addr;
     }
 }
- 
+ /*---------------------------------------------------------*/
 void Database_set(struct Connection *conn, int id, const char *name,
         const char *email)
 {
@@ -128,7 +128,7 @@ void Database_set(struct Connection *conn, int id, const char *name,
     if (!res)
         die("Email copy failed");
 }
- 
+ /*---------------------------------------------------------*/
 void Database_get(struct Connection *conn, int id)
 {
     struct Address *addr = &conn->db->rows[id];
@@ -139,13 +139,13 @@ void Database_get(struct Connection *conn, int id)
         die("ID is not set");
     }
 }
- 
+ /*---------------------------------------------------------*/
 void Database_delete(struct Connection *conn, int id)
 {
     struct Address addr = {.id = id,.set = 0 };
     conn->db->rows[id] = addr;
 }
- 
+ /*---------------------------------------------------------*/
 void Database_list(struct Connection *conn)
 {
     int i = 0;
@@ -158,7 +158,7 @@ void Database_list(struct Connection *conn)
         }
     }
 }
- 
+ /*---------------------------------------------------------*/
 int main(int argc, char *argv[])
 {
     if (argc < 3)
